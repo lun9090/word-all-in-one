@@ -58,8 +58,6 @@ namespace 李艇的办公助手
             sel.Font.Name = "方正仿宋_GBK";
             //字体大小三号
             sel.Font.Size = 16;
-            //首行2字符
-            sel.ParagraphFormat.CharacterUnitFirstLineIndent = float.Parse("2");
             //行距—固定值29磅
             sel.ParagraphFormat.LineSpacingRule = Microsoft.Office.Interop.Word.WdLineSpacing.wdLineSpaceExactly;
             sel.ParagraphFormat.LineSpacing = 29;
@@ -1511,6 +1509,99 @@ namespace 李艇的办公助手
             sel.Find.Execute(ref oMissing, ref oMissing, ref oMissing, ref oMissing, ref oMissing, ref oMissing, ref oMissing, ref oMissing, ref oMissing, ref oMissing, ref replaceAll, ref oMissing, ref oMissing, ref oMissing, ref oMissing);
 
 
+        }
+
+        private void button48_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //清除大纲级别
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevelBodyText;
+            //设置大纲级别1
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevel1;
+        }
+
+        private void button49_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //清除大纲级别
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevelBodyText;
+            //设置大纲级别2
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevel2;
+        }
+
+        private void button50_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //清除大纲级别
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevelBodyText;
+            //设置大纲级别3
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevel3;
+        }
+
+        private void button51_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //清除大纲级别
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevelBodyText;
+            //设置大纲级别4
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevel4;
+        }
+
+        private void button52_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //清除大纲级别
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevelBodyText;
+            //设置大纲级别5
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevel5;
+        }
+
+        private void button53_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //清除大纲级别
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevelBodyText;
+            //设置大纲级别6
+            sel.ParagraphFormat.OutlineLevel = Microsoft.Office.Interop.Word.WdOutlineLevel.wdOutlineLevel6;
+        }
+
+        private void button54_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //大纲升级
+            sel.Paragraphs.OutlinePromote();
+        }
+
+        private void button55_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //大纲升降级
+            sel.Paragraphs.OutlineDemote();
+        }
+
+        private void button56_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //首行2字符
+            sel.ParagraphFormat.CharacterUnitFirstLineIndent = float.Parse("2");
         }
     }
 }
