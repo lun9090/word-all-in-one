@@ -118,16 +118,34 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="下降" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\下降.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="左对齐" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\左对齐.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="正文" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\正文2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="上升" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\上升.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="右缩进" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\右缩进.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="首行缩进" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\首行缩进.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="左缩进" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\左缩进.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="上升" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\上升.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="下降" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\下降.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="居中对齐" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\居中对齐.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="页码设置" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\页码设置.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="右对齐" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\右对齐.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

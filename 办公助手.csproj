@@ -30,10 +30,10 @@
     <DefineConstants>VSTO40</DefineConstants>
     <IsWebBootstrapper>False</IsWebBootstrapper>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <PublishUrl>C:\Users\liting\Desktop\</PublishUrl>
+    <PublishUrl>C:\Users\liting\Desktop\办公助手v.1.02.1\</PublishUrl>
     <InstallUrl />
     <TargetCulture>zh-chs</TargetCulture>
-    <ApplicationVersion>1.0.0.2</ApplicationVersion>
+    <ApplicationVersion>1.0.0.4</ApplicationVersion>
     <AutoIncrementApplicationRevision>true</AutoIncrementApplicationRevision>
     <UpdateEnabled>true</UpdateEnabled>
     <UpdateInterval>7</UpdateInterval>
@@ -221,9 +221,16 @@
       <DependentUpon>ThisAddIn.Designer.xml</DependentUpon>
     </Compile>
     <AppDesigner Include="Properties\" />
+    <None Include="Resources\右缩进.png" />
+    <None Include="Resources\左缩进.png" />
+    <None Include="Resources\页码设置.png" />
+    <None Include="Resources\居中对齐.png" />
+    <None Include="Resources\左对齐.png" />
+    <None Include="Resources\右对齐.png" />
     <Content Include="办公助手_TemporaryKey.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Include="办公助手_1_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\文档大纲.png" />
@@ -254,10 +261,10 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>办公助手_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>办公助手_1_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>33F193F4618DC1B03C903C87C0D560914B617165</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>465E73DDE0FF73A9B4D94F4FE3283E539C8D4281</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>

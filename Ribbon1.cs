@@ -1603,5 +1603,18 @@ namespace 李艇的办公助手
             //首行2字符
             sel.ParagraphFormat.CharacterUnitFirstLineIndent = float.Parse("2");
         }
+
+        private void button57_Click(object sender, RibbonControlEventArgs e)
+        {
+            //选择内容
+            Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            //段落顶格
+            sel.ParagraphFormat.CharacterUnitFirstLineIndent = 0f;
+            sel.ParagraphFormat.FirstLineIndent = 0f;
+            sel.ParagraphFormat.LeftIndent = 0f;
+            sel.ParagraphFormat.CharacterUnitLeftIndent = 0f;
+        }
+
     }
 }

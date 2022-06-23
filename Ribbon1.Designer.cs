@@ -37,17 +37,20 @@ namespace 李艇的办公助手
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Ribbon1));
             this.tab1 = this.Factory.CreateRibbonTab();
+            this.group5 = this.Factory.CreateRibbonGroup();
             this.group1 = this.Factory.CreateRibbonGroup();
             this.group2 = this.Factory.CreateRibbonGroup();
             this.group3 = this.Factory.CreateRibbonGroup();
             this.group4 = this.Factory.CreateRibbonGroup();
+            this.group6 = this.Factory.CreateRibbonGroup();
             this.button12 = this.Factory.CreateRibbonButton();
+            this.menu5 = this.Factory.CreateRibbonMenu();
+            this.button47 = this.Factory.CreateRibbonButton();
             this.button56 = this.Factory.CreateRibbonButton();
+            this.button57 = this.Factory.CreateRibbonButton();
             this.button1 = this.Factory.CreateRibbonButton();
             this.button10 = this.Factory.CreateRibbonButton();
             this.button2 = this.Factory.CreateRibbonButton();
-            this.menu5 = this.Factory.CreateRibbonMenu();
-            this.button47 = this.Factory.CreateRibbonButton();
             this.menu1 = this.Factory.CreateRibbonMenu();
             this.button3 = this.Factory.CreateRibbonButton();
             this.button5 = this.Factory.CreateRibbonButton();
@@ -104,29 +107,35 @@ namespace 李艇的办公助手
             this.button54 = this.Factory.CreateRibbonButton();
             this.button55 = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
+            this.group5.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
             this.group3.SuspendLayout();
             this.group4.SuspendLayout();
+            this.group6.SuspendLayout();
             this.SuspendLayout();
             // 
             // tab1
             // 
+            this.tab1.Groups.Add(this.group5);
             this.tab1.Groups.Add(this.group1);
+            this.tab1.Groups.Add(this.group6);
             this.tab1.Groups.Add(this.group2);
             this.tab1.Groups.Add(this.group3);
             this.tab1.Groups.Add(this.group4);
             this.tab1.Label = "办公助手";
             this.tab1.Name = "tab1";
             // 
+            // group5
+            // 
+            this.group5.Items.Add(this.button12);
+            this.group5.Items.Add(this.menu5);
+            this.group5.Name = "group5";
+            // 
             // group1
             // 
-            this.group1.Items.Add(this.button12);
             this.group1.Items.Add(this.button56);
-            this.group1.Items.Add(this.button1);
-            this.group1.Items.Add(this.button10);
-            this.group1.Items.Add(this.button2);
-            this.group1.Items.Add(this.menu5);
+            this.group1.Items.Add(this.button57);
             this.group1.Name = "group1";
             // 
             // group2
@@ -150,6 +159,13 @@ namespace 李艇的办公助手
             this.group4.Items.Add(this.button55);
             this.group4.Name = "group4";
             // 
+            // group6
+            // 
+            this.group6.Items.Add(this.button1);
+            this.group6.Items.Add(this.button10);
+            this.group6.Items.Add(this.button2);
+            this.group6.Name = "group6";
+            // 
             // button12
             // 
             this.button12.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
@@ -159,14 +175,40 @@ namespace 李艇的办公助手
             this.button12.ShowImage = true;
             this.button12.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button12_Click);
             // 
+            // menu5
+            // 
+            this.menu5.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
+            this.menu5.Image = ((System.Drawing.Image)(resources.GetObject("menu5.Image")));
+            this.menu5.Items.Add(this.button47);
+            this.menu5.ItemSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
+            this.menu5.Label = "排版";
+            this.menu5.Name = "menu5";
+            this.menu5.ShowImage = true;
+            // 
+            // button47
+            // 
+            this.button47.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
+            this.button47.Label = "断行重排";
+            this.button47.Name = "button47";
+            this.button47.ShowImage = true;
+            this.button47.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button47_Click);
+            // 
             // button56
             // 
             this.button56.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
-            this.button56.Image = global::李艇的办公助手.Properties.Resources.首行缩进;
+            this.button56.Image = global::李艇的办公助手.Properties.Resources.右缩进;
             this.button56.Label = "缩进";
             this.button56.Name = "button56";
             this.button56.ShowImage = true;
             this.button56.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button56_Click);
+            // 
+            // button57
+            // 
+            this.button57.Image = global::李艇的办公助手.Properties.Resources.左缩进;
+            this.button57.Label = "顶格";
+            this.button57.Name = "button57";
+            this.button57.ShowImage = true;
+            this.button57.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button57_Click);
             // 
             // button1
             // 
@@ -192,24 +234,6 @@ namespace 李艇的办公助手
             this.button2.Name = "button2";
             this.button2.ShowImage = true;
             this.button2.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button2_Click);
-            // 
-            // menu5
-            // 
-            this.menu5.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
-            this.menu5.Image = ((System.Drawing.Image)(resources.GetObject("menu5.Image")));
-            this.menu5.Items.Add(this.button47);
-            this.menu5.ItemSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
-            this.menu5.Label = "排版";
-            this.menu5.Name = "menu5";
-            this.menu5.ShowImage = true;
-            // 
-            // button47
-            // 
-            this.button47.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
-            this.button47.Label = "断行重排";
-            this.button47.Name = "button47";
-            this.button47.ShowImage = true;
-            this.button47.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button47_Click);
             // 
             // menu1
             // 
@@ -654,6 +678,8 @@ namespace 李艇的办公助手
             this.Load += new Microsoft.Office.Tools.Ribbon.RibbonUIEventHandler(this.Ribbon1_Load);
             this.tab1.ResumeLayout(false);
             this.tab1.PerformLayout();
+            this.group5.ResumeLayout(false);
+            this.group5.PerformLayout();
             this.group1.ResumeLayout(false);
             this.group1.PerformLayout();
             this.group2.ResumeLayout(false);
@@ -662,6 +688,8 @@ namespace 李艇的办公助手
             this.group3.PerformLayout();
             this.group4.ResumeLayout(false);
             this.group4.PerformLayout();
+            this.group6.ResumeLayout(false);
+            this.group6.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -735,6 +763,9 @@ namespace 李艇的办公助手
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button54;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button55;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button56;
+        internal Microsoft.Office.Tools.Ribbon.RibbonGroup group5;
+        internal Microsoft.Office.Tools.Ribbon.RibbonGroup group6;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton button57;
     }
 
     partial class ThisRibbonCollection
