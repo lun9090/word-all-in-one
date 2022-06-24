@@ -303,22 +303,46 @@ namespace 李艇的办公助手
 
         private void button10_Click(object sender, RibbonControlEventArgs e)
         {
-            //选择内容
+            ////选择内容
+            //Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+            //Selection sel = Globals.ThisAddIn.Application.Selection;
+            ////清理所有格式
+            //sel.ClearFormatting();
+            ////居中
+            //sel.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+            ////标题字体
+            //sel.Font.Name = "方正仿宋_GBK";
+            ////字体大小四号
+            //sel.Font.Size = 14;
+            ////行距—固定值29磅
+            //sel.ParagraphFormat.LineSpacingRule = Microsoft.Office.Interop.Word.WdLineSpacing.wdLineSpaceExactly;
+            //sel.ParagraphFormat.LineSpacing = 29;
+            ////文字与单元格中心对齐
+            //sel.Cells.VerticalAlignment = (WdCellVerticalAlignment)1;
+
             Document doc = Globals.ThisAddIn.Application.ActiveDocument;
             Selection sel = Globals.ThisAddIn.Application.Selection;
             //清理所有格式
             sel.ClearFormatting();
-            //居中
-            sel.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
-            //标题字体
-            sel.Font.Name = "方正仿宋_GBK";
-            //字体大小四号
-            sel.Font.Size = 14;
-            //行距—固定值29磅
-            sel.ParagraphFormat.LineSpacingRule = Microsoft.Office.Interop.Word.WdLineSpacing.wdLineSpaceExactly;
-            sel.ParagraphFormat.LineSpacing = 29;
-            //文字与单元格中心对齐
+            //根据窗口调整单元格
+            sel.Tables[1].AutoFitBehavior(WdAutoFitBehavior.wdAutoFitWindow);
+            //宋体，五号，行距固定值18磅，垂直对齐：居中。
+            sel.Tables[1].Range.Font.Name= "宋体";
+            sel.Tables[1].Range.ParagraphFormat.Alignment= WdParagraphAlignment.wdAlignParagraphCenter;
+            sel.Tables[1].Range.Font.Size = 10.5f;
             sel.Cells.VerticalAlignment = (WdCellVerticalAlignment)1;
+            sel.Tables[1].Range.ParagraphFormat.LineSpacing = 18;
+            //表格重复标题行
+            sel.Tables[1].Rows.First.HeadingFormat = (int)WdConstants.wdToggle;
+            //表格内容加粗
+            sel.Tables[1].Rows.First.Range.Font.Bold = (int)WdConstants.wdToggle;
+            //表格属性：段落：无缩进，段前0行，段后0行
+            sel.Tables[1].Range.ParagraphFormat.CharacterUnitFirstLineIndent = 0f;
+            sel.Tables[1].Range.ParagraphFormat.FirstLineIndent = 0f;
+            sel.Tables[1].Range.ParagraphFormat.LeftIndent = 0f;
+            sel.Tables[1].Range.ParagraphFormat.CharacterUnitLeftIndent = 0f;
+
+
 
         }
 
