@@ -6,6 +6,7 @@ using Microsoft.Office.Interop.Word;
 using Microsoft.Office.Tools.Ribbon;
 using Microsoft.Office.Tools.Word;
 using Document = Microsoft.Office.Interop.Word.Document;
+using System.Windows.Forms;
 
 
 namespace 李艇的办公助手
@@ -332,18 +333,32 @@ namespace 李艇的办公助手
             sel.Tables[1].Range.Font.Size = 10.5f;
             sel.Cells.VerticalAlignment = (WdCellVerticalAlignment)1;
             sel.Tables[1].Range.ParagraphFormat.LineSpacing = 18;
-            //表格重复标题行
-            sel.Tables[1].Rows.First.HeadingFormat = (int)WdConstants.wdToggle;
-            //表格内容加粗
-            sel.Tables[1].Rows.First.Range.Font.Bold = (int)WdConstants.wdToggle;
+            
             //表格属性：段落：无缩进，段前0行，段后0行
             sel.Tables[1].Range.ParagraphFormat.CharacterUnitFirstLineIndent = 0f;
             sel.Tables[1].Range.ParagraphFormat.FirstLineIndent = 0f;
             sel.Tables[1].Range.ParagraphFormat.LeftIndent = 0f;
             sel.Tables[1].Range.ParagraphFormat.CharacterUnitLeftIndent = 0f;
 
+            //默认创建的表格没有边框，这里修改其属性，使得创建的表格带有边框 
+            sel.Tables[1].Borders.Enable = 1;//这个值可以设置得很大，例如5、13等等
 
-
+            // 设置table边框样式
+            sel.Tables[1].Borders.OutsideLineStyle = WdLineStyle.wdLineStyleSingle;//表格外框是单线
+            sel.Tables[1].Borders.InsideLineStyle = WdLineStyle.wdLineStyleSingle;//表格内框是单线
+            //表格内容加粗
+            sel.Tables[1].Cell(1, 1).Select();
+            sel.SelectRow();
+            sel.Range.Font.Bold = (int)WdConstants.wdToggle;
+            //表格重复标题行
+            //sel.Tables[1].Cell(1, 1).Select();
+            //sel.MoveRight();
+            //sel.Rows.HeadingFormat = (int)WdConstants.wdToggle;
+            sel.Tables[1].Cell(1, 1).Select();
+            sel.MoveRight();
+            sel.MoveLeft();
+            sel.Range.Rows.HeadingFormat = (int)WdConstants.wdToggle;
+            sel.Range.Rows.HeadingFormat = (int)WdConstants.wdToggle;
         }
 
         private void button11_Click(object sender, RibbonControlEventArgs e)
