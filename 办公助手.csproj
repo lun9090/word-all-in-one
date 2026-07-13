@@ -227,10 +227,7 @@
     <None Include="Resources\居中对齐.png" />
     <None Include="Resources\左对齐.png" />
     <None Include="Resources\右对齐.png" />
-    <Content Include="办公助手_TemporaryKey.pfx">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <None Include="办公助手_1_TemporaryKey.pfx" />
+    <None Include="办公助手_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\文档大纲.png" />
@@ -261,10 +258,10 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>办公助手_1_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>办公助手_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>465E73DDE0FF73A9B4D94F4FE3283E539C8D4281</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>B6DDFF4B5C5A52FCFCD0BB08AB690417931F2F36</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
