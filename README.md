@@ -1,69 +1,101 @@
-# word-all-in-one
-Word办公助手
-## 背景
-工作中涉及到word比较多，一直在用小恐龙办公助手和快点，功能很庞大，但是我常用的功能不多，为了能够减少在编制文档过程中的操作链路，查阅网上信息，自行开发本插件，因开发时间比较久，前面版本比较多，并未正式发布，所以见谅。
+﻿# 📄 办公助手
 
-# 功能清单
+**Word 公文排版 VSTO 插件** —— 一键实现报告格式标准，大幅提升文档处理效率。
 
-![image](https://user-images.githubusercontent.com/78783303/175482360-3dd0f8fe-59a9-4a68-b7d5-7f3a90fc808e.png)
+---
 
+## ✨ 主要功能
 
+| 功能类别 | 具体操作 | 快捷键/按钮 |
+|----------|----------|-------------|
+| **标题样式** | 方正小标宋、二号、居中，固定行距29磅 | `button1` |
+| **正文样式** | 方正仿宋、三号、两端对齐，段前段后0磅，固定行距29磅 | `button2` |
+| **一级标题（黑体）** | 方正黑体 + 自动编号（一、二、…） | `button3` ~ `button19`（起始1~10） |
+| **二级标题（楷体）** | 方正楷体 + 自动编号（（一）、（二）、…） | `button8`、`button20~28` |
+| **三级标题（仿宋）** | 方正仿宋 + 阿拉伯数字编号（1.、2.、…） | `button4`、`button29~37` |
+| **四级标题（仿宋）** | 方正仿宋 + 括号编号（（1）、（2）、…） | `button9`、`button38~46` |
+| **表格快速排版** | 自动调整列宽、宋体五号、居中、边框、标题行加粗并重复 | `button10`（当前表）<br>`button58`（全部表） |
+| **页面精细设置** | A4、边距（上37下35左28右26mm）、页脚24.7mm、每页22行网格、禁止标点溢出、修改正文样式使后续段落自动继承 | `button12` |
+| **标记与颜色** | 黄色高亮 + 红色字体 / 清除标记 | `button11` / `button13` |
+| **查找替换** | 删除多余换行符（保留中文标点后一个回车） | `button47` |
+| **大纲级别** | 一键设置为1~6级，或升降级 | `button48~55` |
+| **缩进控制** | 首行缩进2字符 / 取消所有缩进 | `button56` / `button57` |
 
-# 特别说明
+---
 
-本工具根据个人工作需要开发，有其他需求的，可以留言。
+## 🚀 快速开始
 
-## 开发环境
+### 环境要求
+- **操作系统**：Windows 7 及以上
+- **Office**：Microsoft Office 2010 及以上（支持 Word）
+- **.NET Framework**：4.6.1 或更高
+- **开发工具**：Visual Studio 2019/2022（含 VSTO 工作负载）
 
-Microsoft Visual Studio Community 2022
-版本 17.2.2
-VisualStudio.17.Release/17.2.2+32519.379
-Microsoft .NET Framework
-版本 4.8.04161
+### 安装与使用
+1. 下载本仓库源码或 Release 安装包。
+2. 使用 Visual Studio 打开解决方案，编译生成。
+3. 运行安装程序（.vsto 或 .msi），插件会自动注册到 Word。
+4. 启动 Word，在 **“加载项”** 选项卡中即可看到 **“办公助手”** 功能区，点击相应按钮即可应用样式。
 
-已安装的版本: Community
+> 💡 **提示**：首次使用建议先点击 `button12`（页面设置），让后续所有段落自动继承标点控制和首行缩进。
 
-ASP.NET and Web Tools 2019   17.2.389.42256
-ASP.NET and Web Tools 2019
+---
 
-Azure 应用服务工具 3.0.0 版   17.2.389.42256
-Azure 应用服务工具 3.0.0 版
+## 📐 设计理念
 
-C# 工具   4.2.0-4.22252.24+47cdc16a21bbb8a4aadfb666b011e2059e1be5d2
-IDE 中使用的 C# 组件。可能使用其他版本的编译器，具体取决于你的项目类型和设置。
+- **忠于国标**：严格遵循《党政机关公文格式》（GB/T 9704-2012）常用参数。
+- **高效批处理**：支持批量处理整个文档的表格、段落和样式。
+- **性能优化**：关闭屏幕更新、显式释放 COM 对象，处理百页文档仍保持流畅。
+- **易扩展**：代码分层清晰，新增样式或编号只需调用核心方法。
 
-Common Azure Tools   1.10
-Provides common services for use by Azure Mobile Services and Microsoft Azure Tools.
+---
 
-Microsoft JVM Debugger   1.0
-Provides support for connecting the Visual Studio debugger to JDWP compatible Java Virtual Machines
+## 🛠️ 技术栈
 
-NuGet 包管理器   6.2.0
-Visual Studio 中的 NuGet 包管理器。有关 NuGet 的详细信息，请访问 https://docs.nuget.org/
+- **语言**：C#
+- **框架**：.NET Framework 4.6.1
+- **Office 互操作**：Microsoft.Office.Interop.Word
+- **开发模型**：VSTO（Visual Studio Tools for Office）
+- **设计模式**：辅助方法封装 COM 操作，资源管理使用 `try-finally` + `Marshal.ReleaseComObject`
 
-Razor (ASP.NET Core)   17.0.0.2218101+885a343b00bcab620a90c1550c37dafd730ce984
-提供 ASP.NET Core Razor 的语言服务。
+---
 
-SQL Server Data Tools   17.0.62204.01010
-Microsoft SQL Server Data Tools
+## 📁 项目结构
 
-TypeScript Tools   17.0.10418.2001
-TypeScript Tools for Microsoft Visual Studio
+```
+李艇的办公助手/
+├── Ribbon1.cs              # 功能区按钮逻辑（核心）
+├── ThisAddIn.cs            # 插件启动/关闭
+├── Ribbon1.Designer.cs     # 功能区设计器（自动生成）
+├── Properties/             # 程序集信息
+└── Resources/              # 图标等资源
+```
 
-Visual Basic 工具   4.2.0-4.22252.24+47cdc16a21bbb8a4aadfb666b011e2059e1be5d2
-IDE 中使用的 Visual Basic 组件。可能使用其他版本的编译器，具体取决于你的项目类型和设置。
+---
 
-Visual F# Tools   17.1.0-beta.22253.3+058e7a7e597a02c129f38742f250a4b212da9ee3
-Microsoft Visual F# Tools
+## 🤝 贡献指南
 
-Visual Studio IntelliCode   2.2
-Visual Studio 的 AI 协助开发。
+欢迎提交 Issue 或 Pull Request 来帮助改进！
 
-Visual Studio 的 Office 开发人员工具   17.0.32314.00
-Microsoft Visual Studio 的 Office 开发工具
+1. Fork 本项目。
+2. 创建您的特性分支 (`git checkout -b feature/AmazingFeature`)。
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)。
+4. 推送到分支 (`git push origin feature/AmazingFeature`)。
+5. 打开一个 Pull Request。
 
-Workflow Manager Tools 1.0   1.0
-此程序包包含 Workflow Manager 的必要 Visual Studio 集成组件。
+---
 
+## 📄 许可证
 
+本项目基于 **MIT License** 开源，详情请见 [LICENSE](LICENSE) 文件。
 
+---
+
+## 📞 联系与支持
+
+- 作者：lun9090
+- 如有问题，请在此仓库提交 [Issues](https://github.com/lun9090/word-all-in-one/issues)。
+
+---
+
+**让公文排版变得如此简单，助力高效办公！** 🎉
