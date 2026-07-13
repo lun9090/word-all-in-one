@@ -86,7 +86,7 @@
 
 ## 📄 许可证
 
-本项目基于 **Apache-2.0 license** 开源，详情请见 [LICENSE]([LICENSE](https://github.com/lun9090/word-all-in-one?tab=Apache-2.0-1-ov-file)) 文件。
+本项目基于 **Apache-2.0 license** 开源，详情请见 [LICENSE](https://github.com/lun9090/word-all-in-one?tab=Apache-2.0-1-ov-file)文件。
 
 ---
 
