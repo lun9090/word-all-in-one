@@ -33,6 +33,58 @@ namespace 李艇的办公助手
             }
         }
 
+        // 同步 Selection（插入点）格式使后续输入继承 Range 的格式
+        private void SyncSelectionToRange(Selection sel)
+        {
+            if (sel == null) return;
+
+            Range r = sel.Range;
+            Font rf = null;
+            ParagraphFormat rpf = null;
+            Font sf = null;
+            ParagraphFormat spf = null;
+            try
+            {
+                rf = r.Font;
+                rpf = r.ParagraphFormat;
+
+                sf = sel.Font;
+                spf = sel.ParagraphFormat;
+
+                // 字体
+                if (rf != null && sf != null)
+                {
+                    try { sf.Name = rf.Name; } catch { }
+                    try { sf.Size = rf.Size; } catch { }
+                    try { sf.Bold = rf.Bold; } catch { }
+                    try { sf.Italic = rf.Italic; } catch { }
+                    try { sf.Color = rf.Color; } catch { }
+                }
+
+                // 段落格式（常用项）
+                if (rpf != null && spf != null)
+                {
+                    try { spf.LineSpacingRule = rpf.LineSpacingRule; } catch { }
+                    try { spf.LineSpacing = rpf.LineSpacing; } catch { }
+                    try { spf.Alignment = rpf.Alignment; } catch { }
+                    try { spf.SpaceBefore = rpf.SpaceBefore; } catch { }
+                    try { spf.SpaceAfter = rpf.SpaceAfter; } catch { }
+                    try { spf.CharacterUnitFirstLineIndent = rpf.CharacterUnitFirstLineIndent; } catch { }
+                    try { spf.FirstLineIndent = rpf.FirstLineIndent; } catch { }
+                    try { spf.LeftIndent = rpf.LeftIndent; } catch { }
+                    try { spf.CharacterUnitLeftIndent = rpf.CharacterUnitLeftIndent; } catch { }
+                    try { spf.OutlineLevel = rpf.OutlineLevel; } catch { }
+                }
+            }
+            finally
+            {
+                if (spf != null) Marshal.ReleaseComObject(spf);
+                if (sf != null) Marshal.ReleaseComObject(sf);
+                if (rpf != null) Marshal.ReleaseComObject(rpf);
+                if (rf != null) Marshal.ReleaseComObject(rf);
+            }
+        }
+
         // ==================== 公用段落样式 ====================
         // 新增：接受 Range 的高性能实现（缓存 COM 对象、批量设置）
         private void ApplyBasicParagraphStyle(Range range, string fontName, float fontSize, float lineSpacing)
@@ -68,11 +120,38 @@ namespace 李艇的办公助手
             }
         }
 
-        // 兼容旧调用：Selection 版本仅委托给 Range 版本
+        // 兼容旧调用：Selection 版本仅委托给 Range 版本，并保证在光标处（折叠选区）后续输入继承样式
         private void ApplyBasicParagraphStyle(Selection sel, string fontName, float fontSize, float lineSpacing)
         {
             if (sel == null) return;
+
+            // 先对 Range 做统一处理（覆盖选区或当前段落）
             ApplyBasicParagraphStyle(sel.Range, fontName, fontSize, lineSpacing);
+
+            // 额外设置 Selection（确保光标处后续输入继承样式）
+            Font sf = null;
+            ParagraphFormat spf = null;
+            try
+            {
+                sf = sel.Font;
+                spf = sel.ParagraphFormat;
+
+                // 设置 Selection 的字体与段落属性，使插入点处的后续输入采用相同格式
+                sf.Name = fontName;
+                sf.Size = fontSize;
+
+                spf.LineSpacingRule = WdLineSpacing.wdLineSpaceExactly;
+                spf.LineSpacing = lineSpacing;
+                // 保持 Range 版本的一致默认（两端对齐）；调用方可再覆盖 Alignment
+                spf.Alignment = WdParagraphAlignment.wdAlignParagraphJustify;
+                spf.SpaceBefore = 0;
+                spf.SpaceAfter = 0;
+            }
+            finally
+            {
+                if (spf != null) Marshal.ReleaseComObject(spf);
+                if (sf != null) Marshal.ReleaseComObject(sf);
+            }
         }
 
         // ==================== 编号辅助方法 ====================
@@ -117,13 +196,15 @@ namespace 李艇的办公助手
             }
         }
 
-        // ==================== 按钮与其它逻辑（保持原样，但改为 Range 操作） ====================
+        // ==================== 按钮与其它逻辑（确保光标处继承样式） ====================
+
         private void button1_Click_1(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
-            // 直接使用 Range 实现
-            ApplyBasicParagraphStyle(sel.Range, "方正小标宋_GBK", 22f, 29f);
-            // 特殊对齐与字号（如果额外设置需要）
+            // 使用 Selection 版本，使光标处也能继承样式
+            ApplyBasicParagraphStyle(sel, "方正小标宋_GBK", 22f, 29f);
+
+            // 特殊对齐
             Range r = sel.Range;
             ParagraphFormat pf = null;
             try
@@ -135,68 +216,344 @@ namespace 李艇的办公助手
             {
                 if (pf != null) Marshal.ReleaseComObject(pf);
             }
+
+            SyncSelectionToRange(sel);
         }
 
         private void button2_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
-            ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f);
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            SyncSelectionToRange(sel);
         }
 
         // 黑体一级编号（起始1~10）
         private void button3_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
-            ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f);
-            // 设置大纲级别并应用编号
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 1);
+            SyncSelectionToRange(sel);
         }
-        private void button5_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1; ApplyNumbering(sel.Range, "%1、", 2); }
-        private void button6_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1; ApplyNumbering(sel.Range, "%1、", 3); }
-        private void button7_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1; ApplyNumbering(sel.Range, "%1、", 4); }
-        private void button14_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1; ApplyNumbering(sel.Range, "%1、", 5); }
-        private void button15_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1; ApplyNumbering(sel.Range, "%1、", 6); }
-        private void button16_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1; ApplyNumbering(sel.Range, "%1、", 7); }
-        private void button17_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1; ApplyNumbering(sel.Range, "%1、", 8); }
-        private void button18_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1; ApplyNumbering(sel.Range, "%1、", 9); }
-        private void button19_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正黑体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1; ApplyNumbering(sel.Range, "%1、", 10); }
+        private void button5_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            ApplyNumbering(sel.Range, "%1、", 2);
+            SyncSelectionToRange(sel);
+        }
+        private void button6_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            ApplyNumbering(sel.Range, "%1、", 3);
+            SyncSelectionToRange(sel);
+        }
+        private void button7_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            ApplyNumbering(sel.Range, "%1、", 4);
+            SyncSelectionToRange(sel);
+        }
+        private void button14_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            ApplyNumbering(sel.Range, "%1、", 5);
+            SyncSelectionToRange(sel);
+        }
+        private void button15_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            ApplyNumbering(sel.Range, "%1、", 6);
+            SyncSelectionToRange(sel);
+        }
+        private void button16_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            ApplyNumbering(sel.Range, "%1、", 7);
+            SyncSelectionToRange(sel);
+        }
+        private void button17_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            ApplyNumbering(sel.Range, "%1、", 8);
+            SyncSelectionToRange(sel);
+        }
+        private void button18_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            ApplyNumbering(sel.Range, "%1、", 9);
+            SyncSelectionToRange(sel);
+        }
+        private void button19_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            ApplyNumbering(sel.Range, "%1、", 10);
+            SyncSelectionToRange(sel);
+        }
 
         // 楷体二级编号（起始1~10）
-        private void button8_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楷体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 1); }
-        private void button20_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楷体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 2); }
-        private void button21_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楷体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 3); }
-        private void button22_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楷体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 4); }
-        private void button23_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楷体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 5); }
-        private void button24_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楷体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 6); }
-        private void button25_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楷体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 7); }
-        private void button26_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楱体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 8); }
-        private void button27_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楷体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 9); }
-        private void button28_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正楷体_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2; ApplyNumbering(sel.Range, "（%1）", 10); }
+        private void button8_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 1);
+            SyncSelectionToRange(sel);
+        }
+        private void button20_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 2);
+            SyncSelectionToRange(sel);
+        }
+        private void button21_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 3);
+            SyncSelectionToRange(sel);
+        }
+        private void button22_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 4);
+            SyncSelectionToRange(sel);
+        }
+        private void button23_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 5);
+            SyncSelectionToRange(sel);
+        }
+        private void button24_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 6);
+            SyncSelectionToRange(sel);
+        }
+        private void button25_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 7);
+            SyncSelectionToRange(sel);
+        }
+        private void button26_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楱体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 8);
+            SyncSelectionToRange(sel);
+        }
+        private void button27_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 9);
+            SyncSelectionToRange(sel);
+        }
+        private void button28_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            ApplyNumbering(sel.Range, "（%1）", 10);
+            SyncSelectionToRange(sel);
+        }
 
         // 仿宋三级编号（阿拉伯数字，起始1~10）
-        private void button4_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 1, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button29_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 2, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button30_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 3, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button31_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 4, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button32_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 5, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button33_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 6, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button34_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 7, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button35_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 8, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button36_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 9, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button37_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3; ApplyNumbering(sel.Range, "%1．", 10, WdListNumberStyle.wdListNumberStyleArabic); }
+        private void button4_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 1, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button29_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 2, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button30_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 3, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button31_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 4, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button32_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 5, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button33_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 6, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button34_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 7, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button35_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 8, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button36_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 9, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button37_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            ApplyNumbering(sel.Range, "%1．", 10, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
 
         // 仿宋四级编号（阿拉伯数字，起始1~10）
-        private void button9_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 1, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button38_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 2, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button39_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 3, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button40_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 4, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button41_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 5, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button42_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 6, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button43_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 7, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button44_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 8, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button45_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 9, WdListNumberStyle.wdListNumberStyleArabic); }
-        private void button46_Click(object sender, RibbonControlEventArgs e) { Selection sel = Globals.ThisAddIn.Application.Selection; ApplyBasicParagraphStyle(sel.Range, "方正仿宋_GBK", 16f, 29f); sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4; ApplyNumbering(sel.Range, "（%1）", 10, WdListNumberStyle.wdListNumberStyleArabic); }
+        private void button9_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 1, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button38_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 2, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button39_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 3, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button40_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 4, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button41_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 5, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button42_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 6, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button43_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 7, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button44_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 8, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button45_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 9, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
+        private void button46_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+            sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            ApplyNumbering(sel.Range, "（%1）", 10, WdListNumberStyle.wdListNumberStyleArabic);
+            SyncSelectionToRange(sel);
+        }
 
         // ==================== 表格处理 ====================
         private void button10_Click(object sender, RibbonControlEventArgs e)
@@ -300,6 +657,25 @@ namespace 李艇的办公助手
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Range.HighlightColorIndex = WdColorIndex.wdYellow;
             sel.Range.Font.Color = WdColor.wdColorRed;
+
+            // 额外设置 Selection 本身（使光标后续输入为红色、带高亮）
+            Font sf = null;
+            ParagraphFormat spf = null;
+            try
+            {
+                sf = sel.Font;
+                spf = sel.ParagraphFormat;
+
+                sf.Color = WdColor.wdColorRed;
+                spf.LineSpacingRule = spf.LineSpacingRule; // 保持原有行距规则
+            }
+            finally
+            {
+                if (spf != null) Marshal.ReleaseComObject(spf);
+                if (sf != null) Marshal.ReleaseComObject(sf);
+            }
+
+            SyncSelectionToRange(sel);
         }
 
         private void button13_Click(object sender, RibbonControlEventArgs e)
@@ -307,6 +683,20 @@ namespace 李艇的办公助手
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Range.HighlightColorIndex = WdColorIndex.wdNoHighlight;
             sel.Range.Font.Color = WdColor.wdColorAutomatic;
+
+            // 额外设置 Selection 本身（清除光标处的颜色设置）
+            Font sf = null;
+            try
+            {
+                sf = sel.Font;
+                sf.Color = WdColor.wdColorAutomatic;
+            }
+            finally
+            {
+                if (sf != null) Marshal.ReleaseComObject(sf);
+            }
+
+            SyncSelectionToRange(sel);
         }
 
         // ==================== 页面设置（仅页面项 + 仅修改“正文”样式） ====================
@@ -378,6 +768,8 @@ namespace 李艇的办公助手
                              ref oMissing, ref oMissing, ref oMissing, ref oMissing,
                              ref oMissing, ref oMissing, ref replaceAll, ref oMissing,
                              ref oMissing, ref oMissing, ref oMissing);
+
+            SyncSelectionToRange(sel);
         }
 
         // ==================== 大纲级别单独设置 ====================
@@ -385,41 +777,49 @@ namespace 李艇的办公助手
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
+            SyncSelectionToRange(sel);
         }
         private void button49_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
+            SyncSelectionToRange(sel);
         }
         private void button50_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
+            SyncSelectionToRange(sel);
         }
         private void button51_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
+            SyncSelectionToRange(sel);
         }
         private void button52_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel5;
+            SyncSelectionToRange(sel);
         }
         private void button53_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel6;
+            SyncSelectionToRange(sel);
         }
         private void button54_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Paragraphs.OutlinePromote();
+            SyncSelectionToRange(sel);
         }
         private void button55_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Paragraphs.OutlineDemote();
+            SyncSelectionToRange(sel);
         }
 
         // ==================== 缩进控制 ====================
@@ -428,6 +828,20 @@ namespace 李艇的办公助手
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             sel.Range.ParagraphFormat.CharacterUnitFirstLineIndent = 2f;
+
+            // 同步 Selection（确保光标处的后续输入继承）
+            ParagraphFormat spf = null;
+            try
+            {
+                spf = sel.ParagraphFormat;
+                spf.CharacterUnitFirstLineIndent = 2f;
+            }
+            finally
+            {
+                if (spf != null) Marshal.ReleaseComObject(spf);
+            }
+
+            SyncSelectionToRange(sel);
         }
 
         /// <summary>取消首行与左缩进，恢复为无缩进状态。</summary>
@@ -438,6 +852,68 @@ namespace 李艇的办公助手
             sel.Range.ParagraphFormat.FirstLineIndent = 0f;
             sel.Range.ParagraphFormat.LeftIndent = 0f;
             sel.Range.ParagraphFormat.CharacterUnitLeftIndent = 0f;
+
+            // 同步 Selection（确保光标处后续输入继承）
+            ParagraphFormat spf = null;
+            try
+            {
+                spf = sel.ParagraphFormat;
+                spf.CharacterUnitFirstLineIndent = 0f;
+                spf.FirstLineIndent = 0f;
+                spf.LeftIndent = 0f;
+                spf.CharacterUnitLeftIndent = 0f;
+            }
+            finally
+            {
+                if (spf != null) Marshal.ReleaseComObject(spf);
+            }
+
+            SyncSelectionToRange(sel);
+        }
+
+        private void button59_Click(object sender, RibbonControlEventArgs e)
+        {
+            // 小标题：方正楷体 三号 居中 正文文本 缩进左右均为0 缩进特殊无 间距段前后均为0 行距29磅
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            const string fontName = "方正楷体_GBK";
+            const float fontSize = 16f; // 三号
+            const float lineSpacing = 29f;
+
+            // 使用 Selection 版本，保证光标处后续输入继承样式
+            ApplyBasicParagraphStyle(sel, fontName, fontSize, lineSpacing);
+
+            // 覆盖对齐与缩进为题述要求
+            ParagraphFormat pf = null;
+            try
+            {
+                pf = sel.ParagraphFormat;
+                pf.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                pf.CharacterUnitFirstLineIndent = 0f;
+                pf.FirstLineIndent = 0f;
+                pf.LeftIndent = 0f;
+                pf.CharacterUnitLeftIndent = 0f;
+                pf.SpaceBefore = 0;
+                pf.SpaceAfter = 0;
+            }
+            finally
+            {
+                if (pf != null) Marshal.ReleaseComObject(pf);
+            }
+
+            // 确保 Selection.Font 也一致（光标处后续输入）
+            Font sf = null;
+            try
+            {
+                sf = sel.Font;
+                sf.Name = fontName;
+                sf.Size = fontSize;
+            }
+            finally
+            {
+                if (sf != null) Marshal.ReleaseComObject(sf);
+            }
+
+            SyncSelectionToRange(sel);
         }
     }
 }

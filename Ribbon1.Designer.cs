@@ -46,8 +46,9 @@ namespace 李艇的办公助手
             this.button57 = this.Factory.CreateRibbonButton();
             this.group6 = this.Factory.CreateRibbonGroup();
             this.button1 = this.Factory.CreateRibbonButton();
-            this.button10 = this.Factory.CreateRibbonButton();
+            this.button59 = this.Factory.CreateRibbonButton();
             this.button58 = this.Factory.CreateRibbonButton();
+            this.button10 = this.Factory.CreateRibbonButton();
             this.button2 = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
             this.menu1 = this.Factory.CreateRibbonMenu();
@@ -186,26 +187,28 @@ namespace 李艇的办公助手
             // group6
             // 
             this.group6.Items.Add(this.button1);
-            this.group6.Items.Add(this.button10);
+            this.group6.Items.Add(this.button59);
             this.group6.Items.Add(this.button58);
+            this.group6.Items.Add(this.button10);
             this.group6.Items.Add(this.button2);
             this.group6.Name = "group6";
             // 
             // button1
             // 
+            this.button1.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
             this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
-            this.button1.Label = "标题";
+            this.button1.Label = "大标题";
             this.button1.Name = "button1";
             this.button1.ShowImage = true;
             this.button1.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button1_Click_1);
             // 
-            // button10
+            // button59
             // 
-            this.button10.Image = ((System.Drawing.Image)(resources.GetObject("button10.Image")));
-            this.button10.Label = "表格";
-            this.button10.Name = "button10";
-            this.button10.ShowImage = true;
-            this.button10.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button10_Click);
+            this.button59.Image = ((System.Drawing.Image)(resources.GetObject("button59.Image")));
+            this.button59.Label = "小标题";
+            this.button59.Name = "button59";
+            this.button59.ShowImage = true;
+            this.button59.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button59_Click);
             // 
             // button58
             // 
@@ -214,6 +217,14 @@ namespace 李艇的办公助手
             this.button58.Name = "button58";
             this.button58.ShowImage = true;
             this.button58.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button58_Click);
+            // 
+            // button10
+            // 
+            this.button10.Image = ((System.Drawing.Image)(resources.GetObject("button10.Image")));
+            this.button10.Label = "表格";
+            this.button10.Name = "button10";
+            this.button10.ShowImage = true;
+            this.button10.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button10_Click);
             // 
             // button2
             // 
@@ -708,7 +719,6 @@ namespace 李艇的办公助手
 
         internal Microsoft.Office.Tools.Ribbon.RibbonTab tab1;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group1;
-        internal Microsoft.Office.Tools.Ribbon.RibbonButton button1;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button2;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group2;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button3;
@@ -777,6 +787,8 @@ namespace 李艇的办公助手
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group6;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button57;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button58;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton button59;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton button1;
     }
 
     partial class ThisRibbonCollection

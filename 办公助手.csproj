@@ -261,7 +261,7 @@
     <ManifestKeyFile>办公助手_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>B6DDFF4B5C5A52FCFCD0BB08AB690417931F2F36</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>9C3A509077E1A27A784FAB2BA6DE316A8C354F7F</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
