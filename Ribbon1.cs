@@ -128,7 +128,7 @@ namespace 李艇的办公助手
             // 先对 Range 做统一处理（覆盖选区或当前段落）
             ApplyBasicParagraphStyle(sel.Range, fontName, fontSize, lineSpacing);
 
-            // 额外设置 Selection（确保光标处后续输入继承样式）
+            // 额外设置 Selection（确保光标处后后续输入继承样式）
             Font sf = null;
             ParagraphFormat spf = null;
             try
@@ -596,11 +596,19 @@ namespace 李艇的办公助手
                             tr.ParagraphFormat.LineSpacingRule = WdLineSpacing.wdLineSpaceAtLeast;
                             try
                             {
-                                tr.ParagraphFormat.LineSpacing = 0f; // 尝试设置为 0（表示“最小值”）
+                                tr.ParagraphFormat.LineSpacing = 0f; // 尝试“最小值”
                             }
                             catch (System.Runtime.InteropServices.COMException)
                             {
-                                tr.ParagraphFormat.LineSpacing = FallbackMinLineSpacing;
+                                try
+                                {
+                                    tr.ParagraphFormat.LineSpacing = FallbackMinLineSpacing; // 合法回落
+                                }
+                                catch (System.Runtime.InteropServices.COMException)
+                                {
+                                    // 最后降级为单倍行距，保证不会抛异
+                                    tr.ParagraphFormat.LineSpacingRule = WdLineSpacing.wdLineSpaceSingle;
+                                }
                             }
 
                             // 段前/段后为 0
@@ -1036,60 +1044,109 @@ namespace 李艇的办公助手
         {
             if (tbl == null) return;
 
-            // 优先尝试直接按行访问（性能最好）
+            Row hdrRow = null;
+            Range hdrRange = null;
             try
             {
-                Range hdrRange = tbl.Rows[1].Range;
                 try
                 {
+                    hdrRow = tbl.Rows[1];
+                    hdrRange = hdrRow.Range;
                     hdrRange.Font.Name = fontName;
                     hdrRange.Font.Size = fontSize;
                     hdrRange.Font.Bold = 1;
+                    try { hdrRow.HeadingFormat = -1; }
+                    catch (ArgumentException) { ApplyHeaderByCells(tbl, fontName, fontSize); }
                 }
-                finally
+                catch (System.Runtime.InteropServices.COMException)
                 {
-                    if (hdrRange != null) Marshal.ReleaseComObject(hdrRange);
+                    // 无法按 Rows 访问 -> 回退到按单元格处理
+                    ApplyHeaderByCells(tbl, fontName, fontSize);
                 }
-
-                // 如果可以访问 Rows[1]，也设置 HeadingFormat
-                tbl.Rows[1].HeadingFormat = 1;
-                return;
             }
-            catch (System.Runtime.InteropServices.COMException)
+            finally
             {
-                // 回退：按单元格处理属于“逻辑第一行”的单元格
-                int cellCount = tbl.Range.Cells.Count;
-                for (int ci = 1; ci <= cellCount; ++ci)
+                if (hdrRange != null) Marshal.ReleaseComObject(hdrRange);
+                if (hdrRow != null) Marshal.ReleaseComObject(hdrRow);
+            }
+        }
+
+        private void ApplyHeaderByCells(Table tbl, string fontName, float fontSize)
+        {
+            if (tbl == null) return;
+
+            Cells cells = null;
+            try
+            {
+                cells = tbl.Range.Cells;
+                int n = cells.Count;
+                for (int i = 1; i <= n; ++i)
                 {
-                    Cell c = null;
+                    Cell cell = null;
+                    Range cellRange = null;
+                    Font cellFont = null;
                     try
                     {
-                        c = tbl.Range.Cells[ci];
-                        if (c.RowIndex == 1)
+                        cell = cells[i];
+                        // 只处理逻辑上位于第一行的单元格（适用于有纵向合并的表）
+                        if (cell.RowIndex == 1)
                         {
-                            Range cr = c.Range;
-                            try
-                            {
-                                cr.Font.Name = fontName;
-                                cr.Font.Size = fontSize;
-                                cr.Font.Bold = 1;
-                                cr.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
-                                cr.ParagraphFormat.SpaceBefore = 0;
-                                cr.ParagraphFormat.SpaceAfter = 0;
-                            }
-                            finally
-                            {
-                                if (cr != null) Marshal.ReleaseComObject(cr);
-                            }
+                            cellRange = cell.Range;
+                            cellFont = cellRange.Font;
+                            cellFont.Name = fontName;
+                            cellFont.Size = fontSize;
                         }
                     }
                     finally
                     {
+                        if (cellFont != null) Marshal.ReleaseComObject(cellFont);
+                        if (cellRange != null) Marshal.ReleaseComObject(cellRange);
+                        if (cell != null) Marshal.ReleaseComObject(cell);
+                    }
+                }
+            }
+            finally
+            {
+                if (cells != null) Marshal.ReleaseComObject(cells);
+            }
+        }
+
+        private void ApplyHeaderByCellsSafe(Table tbl, string fontName, float fontSize)
+        {
+            if (tbl == null) return;
+
+            Cells allCells = null;
+            try
+            {
+                allCells = tbl.Range.Cells;
+                for (int i = 1; i <= allCells.Count; ++i)
+                {
+                    Cell c = null;
+                    Range r = null;
+                    Font f = null;
+                    try
+                    {
+                        c = allCells[i];
+                        // RowIndex 是单元格在表格中的起始行（合并单元格的顶端也返回顶行索引）
+                        if (c.RowIndex != 1) continue;
+
+                        r = c.Range;
+                        f = r.Font;
+                        f.Name = fontName;
+                        f.Size = fontSize;
+                        f.Bold = 1;
+                    }
+                    finally
+                    {
+                        if (f != null) Marshal.ReleaseComObject(f);
+                        if (r != null) Marshal.ReleaseComObject(r);
                         if (c != null) Marshal.ReleaseComObject(c);
                     }
                 }
-
-                // 不能安全设置 HeadingFormat —— 可在这里记录或通知用户
+            }
+            finally
+            {
+                if (allCells != null) Marshal.ReleaseComObject(allCells);
             }
         }
     }
