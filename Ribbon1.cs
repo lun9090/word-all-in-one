@@ -560,45 +560,135 @@ namespace 李艇的办公助手
         {
             WithScreenUpdatingDisabled(() =>
             {
-                Document doc = Globals.ThisAddIn.Application.ActiveDocument;
-                if (doc.Tables.Count < 1) return;
+                Application app = Globals.ThisAddIn.Application;
+                Document doc = app.ActiveDocument;
+                Selection sel = app.Selection;
+                const float FallbackMinLineSpacing = 0.7f;
 
-                Table tbl = null;
-                Range tr = null;
+                // 优先处理选中的表格；无则回退到文档第一个表格
+                if (sel != null && sel.Tables != null && sel.Tables.Count >= 1)
+                {
+                    for (int ti = 1; ti <= sel.Tables.Count; ++ti)
+                    {
+                        Table tbl = null;
+                        Range tr = null;
+                        try
+                        {
+                            tbl = sel.Tables[ti];
+                            tr = tbl.Range;
+
+                            tr.Font.Reset();
+                            tr.ParagraphFormat.Reset();
+
+                            tbl.AutoFitBehavior(WdAutoFitBehavior.wdAutoFitWindow);
+
+                            // 字体：方正仿宋_GBK（覆盖各字体槽）
+                            tr.Font.Name = "方正仿宋_GBK";
+                            try { tr.Font.NameFarEast = "方正仿宋_GBK"; } catch { }
+                            try { tr.Font.NameAscii = "方正仿宋_GBK"; } catch { }
+                            try { tr.Font.NameOther = "方正仿宋_GBK"; } catch { }
+
+                            tr.Font.Size = 10.5f;
+                            tr.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                            tbl.Range.Cells.VerticalAlignment = WdCellVerticalAlignment.wdCellAlignVerticalCenter;
+
+                            // 行距：选择“最小值”对应用户期望的 0 磅，若被拒绝则回退到 0.7 磅
+                            tr.ParagraphFormat.LineSpacingRule = WdLineSpacing.wdLineSpaceAtLeast;
+                            try
+                            {
+                                tr.ParagraphFormat.LineSpacing = 0f; // 尝试设置为 0（表示“最小值”）
+                            }
+                            catch (System.Runtime.InteropServices.COMException)
+                            {
+                                tr.ParagraphFormat.LineSpacing = FallbackMinLineSpacing;
+                            }
+
+                            // 段前/段后为 0
+                            tr.ParagraphFormat.SpaceBefore = 0;
+                            tr.ParagraphFormat.SpaceAfter = 0;
+
+                            tr.ParagraphFormat.CharacterUnitFirstLineIndent = 0f;
+                            tr.ParagraphFormat.FirstLineIndent = 0f;
+                            tr.ParagraphFormat.LeftIndent = 0f;
+                            tr.ParagraphFormat.CharacterUnitLeftIndent = 0f;
+
+                            tbl.Borders.Enable = 1;
+                            tbl.Borders.OutsideLineStyle = WdLineStyle.wdLineStyleSingle;
+                            tbl.Borders.InsideLineStyle = WdLineStyle.wdLineStyleSingle;
+
+                            if (tbl.Rows.Count >= 1)
+                            {
+                                SafeApplyFirstLogicalRowHeader(tbl, "方正仿宋_GBK", 10.5f);
+                                // 不要直接: Range hdrRange = tbl.Rows[1].Range;
+                                // SafeApplyFirstLogicalRowHeader 内会在可行时设置 HeadingFormat；在回退情况下按单元格处理样式
+                            }
+                        }
+                        finally
+                        {
+                            if (tr != null) Marshal.ReleaseComObject(tr);
+                            if (tbl != null) Marshal.ReleaseComObject(tbl);
+                        }
+                    }
+
+                    return;
+                }
+
+                // 回退：文档第一个表格
+                if (doc == null || doc.Tables.Count < 1) return;
+
+                Table firstTbl = null;
+                Range firstTr = null;
                 try
                 {
-                    tbl = doc.Tables[1];
-                    tr = tbl.Range;
-                    tr.Font.Reset();
-                    tr.ParagraphFormat.Reset();
+                    firstTbl = doc.Tables[1];
+                    firstTr = firstTbl.Range;
 
-                    tbl.AutoFitBehavior(WdAutoFitBehavior.wdAutoFitWindow);
-                    tr.Font.Name = "宋体";
-                    tr.Font.Size = 10.5f;
-                    tr.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
-                    tbl.Range.Cells.VerticalAlignment = WdCellVerticalAlignment.wdCellAlignVerticalCenter;
+                    firstTr.Font.Reset();
+                    firstTr.ParagraphFormat.Reset();
 
-                    tr.ParagraphFormat.LineSpacingRule = WdLineSpacing.wdLineSpaceAtLeast;
-                    tr.ParagraphFormat.LineSpacing = 0;
-                    tr.ParagraphFormat.CharacterUnitFirstLineIndent = 0f;
-                    tr.ParagraphFormat.FirstLineIndent = 0f;
-                    tr.ParagraphFormat.LeftIndent = 0f;
-                    tr.ParagraphFormat.CharacterUnitLeftIndent = 0f;
+                    firstTbl.AutoFitBehavior(WdAutoFitBehavior.wdAutoFitWindow);
 
-                    tbl.Borders.Enable = 1;
-                    tbl.Borders.OutsideLineStyle = WdLineStyle.wdLineStyleSingle;
-                    tbl.Borders.InsideLineStyle = WdLineStyle.wdLineStyleSingle;
+                    firstTr.Font.Name = "方正仿宋_GBK";
+                    try { firstTr.Font.NameFarEast = "方正仿宋_GBK"; } catch { }
+                    try { firstTr.Font.NameAscii = "方正仿宋_GBK"; } catch { }
+                    try { firstTr.Font.NameOther = "方正仿宋_GBK"; } catch { }
 
-                    if (tbl.Rows.Count >= 1)
+                    firstTr.Font.Size = 10.5f;
+                    firstTr.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                    firstTbl.Range.Cells.VerticalAlignment = WdCellVerticalAlignment.wdCellAlignVerticalCenter;
+
+                    firstTr.ParagraphFormat.LineSpacingRule = WdLineSpacing.wdLineSpaceAtLeast;
+                    try
                     {
-                        tbl.Rows[1].Range.Font.Bold = (int)WdConstants.wdToggle;
-                        tbl.Rows[1].HeadingFormat = (int)WdConstants.wdToggle;
+                        firstTr.ParagraphFormat.LineSpacing = 0f;
+                    }
+                    catch (System.Runtime.InteropServices.COMException)
+                    {
+                        firstTr.ParagraphFormat.LineSpacing = FallbackMinLineSpacing;
+                    }
+
+                    firstTr.ParagraphFormat.SpaceBefore = 0;
+                    firstTr.ParagraphFormat.SpaceAfter = 0;
+                    firstTr.ParagraphFormat.CharacterUnitFirstLineIndent = 0f;
+                    firstTr.ParagraphFormat.FirstLineIndent = 0f;
+                    firstTr.ParagraphFormat.LeftIndent = 0f;
+                    firstTr.ParagraphFormat.CharacterUnitLeftIndent = 0f;
+
+                    firstTbl.Borders.Enable = 1;
+                    firstTbl.Borders.OutsideLineStyle = WdLineStyle.wdLineStyleSingle;
+                    firstTbl.Borders.InsideLineStyle = WdLineStyle.wdLineStyleSingle;
+
+                    if (firstTbl.Rows.Count >= 1)
+                    {
+                        SafeApplyFirstLogicalRowHeader(firstTbl, "方正仿宋_GBK", 10.5f);
+                        // 不要直接: Range hdrRange = firstTbl.Rows[1].Range;
+                        // SafeApplyFirstLogicalRowHeader 内会在可行时设置 HeadingFormat；在回退情况下按单元格处理样式
                     }
                 }
                 finally
                 {
-                    if (tr != null) Marshal.ReleaseComObject(tr);
-                    if (tbl != null) Marshal.ReleaseComObject(tbl);
+                    if (firstTr != null) Marshal.ReleaseComObject(firstTr);
+                    if (firstTbl != null) Marshal.ReleaseComObject(firstTbl);
                 }
             });
         }
@@ -608,6 +698,8 @@ namespace 李艇的办公助手
             WithScreenUpdatingDisabled(() =>
             {
                 Document doc = Globals.ThisAddIn.Application.ActiveDocument;
+                const float FallbackMinLineSpacing = 0.7f;
+
                 for (int i = 1; i <= doc.Tables.Count; ++i)
                 {
                     Table tbl = null;
@@ -620,13 +712,29 @@ namespace 李艇的办公助手
                         tr.ParagraphFormat.Reset();
 
                         tbl.AutoFitBehavior(WdAutoFitBehavior.wdAutoFitWindow);
-                        tr.Font.Name = "宋体";
+
+                        // 字体：方正仿宋_GBK
+                        tr.Font.Name = "方正仿宋_GBK";
+                        try { tr.Font.NameFarEast = "方正仿宋_GBK"; } catch { }
+                        try { tr.Font.NameAscii = "方正仿宋_GBK"; } catch { }
+                        try { tr.Font.NameOther = "方正仿宋_GBK"; } catch { }
+
                         tr.Font.Size = 10.5f;
                         tr.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
                         tbl.Range.Cells.VerticalAlignment = WdCellVerticalAlignment.wdCellAlignVerticalCenter;
 
                         tr.ParagraphFormat.LineSpacingRule = WdLineSpacing.wdLineSpaceAtLeast;
-                        tr.ParagraphFormat.LineSpacing = 0;
+                        try
+                        {
+                            tr.ParagraphFormat.LineSpacing = 0f;
+                        }
+                        catch (System.Runtime.InteropServices.COMException)
+                        {
+                            tr.ParagraphFormat.LineSpacing = FallbackMinLineSpacing;
+                        }
+
+                        tr.ParagraphFormat.SpaceBefore = 0;
+                        tr.ParagraphFormat.SpaceAfter = 0;
                         tr.ParagraphFormat.CharacterUnitFirstLineIndent = 0f;
                         tr.ParagraphFormat.FirstLineIndent = 0f;
                         tr.ParagraphFormat.LeftIndent = 0f;
@@ -635,11 +743,18 @@ namespace 李艇的办公助手
                         tbl.Borders.Enable = 1;
                         tbl.Borders.OutsideLineStyle = WdLineStyle.wdLineStyleSingle;
                         tbl.Borders.InsideLineStyle = WdLineStyle.wdLineStyleSingle;
+                        tbl.Borders[WdBorderType.wdBorderLeft].LineStyle = WdLineStyle.wdLineStyleSingle;
+                        tbl.Borders[WdBorderType.wdBorderRight].LineStyle = WdLineStyle.wdLineStyleSingle;
+                        tbl.Borders[WdBorderType.wdBorderTop].LineStyle = WdLineStyle.wdLineStyleSingle;
+                        tbl.Borders[WdBorderType.wdBorderBottom].LineStyle = WdLineStyle.wdLineStyleSingle;
+                        tbl.Borders[WdBorderType.wdBorderHorizontal].LineStyle = WdLineStyle.wdLineStyleSingle;
+                        tbl.Borders[WdBorderType.wdBorderVertical].LineStyle = WdLineStyle.wdLineStyleSingle;
 
                         if (tbl.Rows.Count >= 1)
                         {
-                            tbl.Rows[1].Range.Font.Bold = (int)WdConstants.wdToggle;
-                            tbl.Rows[1].HeadingFormat = (int)WdConstants.wdToggle;
+                            SafeApplyFirstLogicalRowHeader(tbl, "方正仿宋_GBK", 10.5f);
+                            // 不要直接: Range hdrRange = tbl.Rows[1].Range;
+                            // SafeApplyFirstLogicalRowHeader 内会在可行时设置 HeadingFormat；在回退情况下按单元格处理样式
                         }
                     }
                     finally
@@ -914,6 +1029,68 @@ namespace 李艇的办公助手
             }
 
             SyncSelectionToRange(sel);
+        }
+
+        // C#
+        private void SafeApplyFirstLogicalRowHeader(Table tbl, string fontName, float fontSize)
+        {
+            if (tbl == null) return;
+
+            // 优先尝试直接按行访问（性能最好）
+            try
+            {
+                Range hdrRange = tbl.Rows[1].Range;
+                try
+                {
+                    hdrRange.Font.Name = fontName;
+                    hdrRange.Font.Size = fontSize;
+                    hdrRange.Font.Bold = 1;
+                }
+                finally
+                {
+                    if (hdrRange != null) Marshal.ReleaseComObject(hdrRange);
+                }
+
+                // 如果可以访问 Rows[1]，也设置 HeadingFormat
+                tbl.Rows[1].HeadingFormat = 1;
+                return;
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                // 回退：按单元格处理属于“逻辑第一行”的单元格
+                int cellCount = tbl.Range.Cells.Count;
+                for (int ci = 1; ci <= cellCount; ++ci)
+                {
+                    Cell c = null;
+                    try
+                    {
+                        c = tbl.Range.Cells[ci];
+                        if (c.RowIndex == 1)
+                        {
+                            Range cr = c.Range;
+                            try
+                            {
+                                cr.Font.Name = fontName;
+                                cr.Font.Size = fontSize;
+                                cr.Font.Bold = 1;
+                                cr.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                                cr.ParagraphFormat.SpaceBefore = 0;
+                                cr.ParagraphFormat.SpaceAfter = 0;
+                            }
+                            finally
+                            {
+                                if (cr != null) Marshal.ReleaseComObject(cr);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (c != null) Marshal.ReleaseComObject(c);
+                    }
+                }
+
+                // 不能安全设置 HeadingFormat —— 可在这里记录或通知用户
+            }
         }
     }
 }

@@ -144,8 +144,8 @@ namespace 李艇的办公助手
             // 
             this.group6.Items.Add(this.button1);
             this.group6.Items.Add(this.button59);
-            this.group6.Items.Add(this.button58);
             this.group6.Items.Add(this.button10);
+            this.group6.Items.Add(this.button58);
             this.group6.Items.Add(this.button2);
             this.group6.Name = "group6";
             // 
