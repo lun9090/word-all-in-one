@@ -252,6 +252,9 @@
   <ItemGroup>
     <None Include="Resources\首行缩进.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\字体黑突出鲜绿.png" />
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>

@@ -148,4 +148,7 @@
   <data name="右对齐" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\右对齐.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="字体黑突出鲜绿" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\字体黑突出鲜绿.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>
