@@ -39,12 +39,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_42F4EE89A4F34E779882E0F25D2A08AC"
-        "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_5C68B2D1BF24BBD260859E4D1B1AB5E3"
         "OwnerKey" = "8:_417B08554FFF8EB26B225FD8C229C78E"
         "MsmSig" = "8:_UNDEFINED"
@@ -89,12 +83,6 @@
         {
         "MsmKey" = "8:_7CB4C4E5CC88A68D7542D47B40B93CDC"
         "OwnerKey" = "8:_FF325C893C8941C6932F5331554E2E80"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_80288609EE9D4051AB59FCBD665C46DE"
-        "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -184,12 +172,6 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_767C6C55589B30BF8470D8C4407C61E9"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_FF325C893C8941C6932F5331554E2E80"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -229,6 +211,12 @@
         "OwnerKey" = "8:_C845933A610CD8A1083A179815D4D707"
         "MsmSig" = "8:_UNDEFINED"
         }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_767C6C55589B30BF8470D8C4407C61E9"
+        "MsmSig" = "8:_UNDEFINED"
+        }
     }
     "Configurations"
     {
@@ -256,10 +244,10 @@
             "ComponentsUrl" = "8:"
                 "Items"
                 {
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.8"
                     {
-                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
-                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    "Name" = "8:Microsoft .NET Framework 4.8 (x86 和 x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.8"
                     }
                 }
             }
@@ -404,26 +392,6 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_42F4EE89A4F34E779882E0F25D2A08AC"
-            {
-            "SourcePath" = "8:..\\李艇的办公助手.sln"
-            "TargetName" = "8:李艇的办公助手.sln"
-            "Tag" = "8:"
-            "Folder" = "8:_3A3F49792BE844EFA8E2C622B1B3803F"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
             "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_5C68B2D1BF24BBD260859E4D1B1AB5E3"
@@ -597,26 +565,6 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_80288609EE9D4051AB59FCBD665C46DE"
-            {
-            "SourcePath" = "8:..\\李艇的办公助手.csproj"
-            "TargetName" = "8:李艇的办公助手.csproj"
-            "Tag" = "8:"
-            "Folder" = "8:_3A3F49792BE844EFA8E2C622B1B3803F"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_94B04E49408D4CE983F1A7F075586F1D"
@@ -918,7 +866,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Setup1"
         "ProductCode" = "8:{CB52259F-37E9-4D1B-B51C-379BE7D67F69}"
-        "PackageCode" = "8:{84285976-FB19-485E-BDC7-835E7471B66F}"
+        "PackageCode" = "8:{AABE6BB9-EB5F-4B21-961C-3D0C278E9E5F}"
         "UpgradeCode" = "8:{9227E48E-8656-4839-8885-E2B8BE84F670}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"
