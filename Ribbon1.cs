@@ -1,8 +1,11 @@
 ﻿using Microsoft.Office.Interop.Word;
+// 添加此行以引入WdTexture枚举
+using Word = Microsoft.Office.Interop.Word;
 using Microsoft.Office.Tools.Ribbon;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Text;
 using Document = Microsoft.Office.Interop.Word.Document;
 
 namespace 李艇的办公助手
@@ -51,10 +54,14 @@ namespace 李艇的办公助手
                 sf = sel.Font;
                 spf = sel.ParagraphFormat;
 
-                // 字体
+                // 字体：同步所有字体槽与常用属性，确保英文/标点/西文也使用相同字体
                 if (rf != null && sf != null)
                 {
                     try { sf.Name = rf.Name; } catch { }
+                    try { sf.NameFarEast = rf.NameFarEast; } catch { }
+                    try { sf.NameAscii = rf.NameAscii; } catch { }
+                    try { sf.NameOther = rf.NameOther; } catch { }
+                    try { sf.NameBi = rf.NameBi; } catch { }
                     try { sf.Size = rf.Size; } catch { }
                     try { sf.Bold = rf.Bold; } catch { }
                     try { sf.Italic = rf.Italic; } catch { }
@@ -104,19 +111,90 @@ namespace 李艇的办公助手
                 f = range.Font;
                 pf = range.ParagraphFormat;
 
-                f.Name = fontName;
-                f.Size = fontSize;
+                // 同步所有字体槽（中文/东亚/西文/其他/双字库）
+                try { f.Name = fontName; } catch { }
+                try { f.NameFarEast = fontName; } catch { }
+                try { f.NameAscii = fontName; } catch { }
+                try { f.NameOther = fontName; } catch { }
+                try { f.NameBi = fontName; } catch { }
+
+                try { f.Size = fontSize; } catch { }
 
                 pf.LineSpacingRule = WdLineSpacing.wdLineSpaceExactly;
                 pf.LineSpacing = lineSpacing;
                 pf.Alignment = WdParagraphAlignment.wdAlignParagraphJustify;
                 pf.SpaceBefore = 0;
                 pf.SpaceAfter = 0;
+
+                // 确保无左/右缩进，特殊缩进（首行/悬挂）为“无”
+                try { pf.CharacterUnitFirstLineIndent = 0f; } catch { }
+                try { pf.FirstLineIndent = 0f; } catch { }
+                try { pf.LeftIndent = 0f; } catch { }
+                try { pf.RightIndent = 0f; } catch { }
+                try { pf.CharacterUnitLeftIndent = 0f; } catch { }
+                try { pf.CharacterUnitRightIndent = 0f; } catch { }
             }
             finally
             {
                 if (pf != null) Marshal.ReleaseComObject(pf);
                 if (f != null) Marshal.ReleaseComObject(f);
+            }
+
+            // 使用更可靠的查找替换方式修复引号/ASCII 标点字体（替代逐字符遍历）
+            try
+            {
+                ForceQuotesFontViaFindReplace(range, fontName, fontSize);
+            }
+            catch { }
+        }
+
+        // 新增：使用 Find.Replacement 在范围内批量设置引号等 ASCII 标点的字体与字号（性能优，兼容性好）
+        private void ForceQuotesFontViaFindReplace(Range range, string fontName, float fontSize)
+        {
+            if (range == null) return;
+
+            Find find = range.Find;
+
+            // 保存原有设置（以 object 形式保存，恢复时尽量容错）
+            object origMatchWildcards = null;
+            object origWrap = null;
+            object origText = null;
+            try
+            {
+                try { origMatchWildcards = find.MatchWildcards; } catch { }
+                try { origWrap = find.Wrap; } catch { }
+                try { origText = find.Text; } catch { }
+
+                find.ClearFormatting();
+                find.Replacement.ClearFormatting();
+
+                // 匹配直引号/弯引号等
+                find.Text = "[\"\"''“”‘’]";
+                find.Replacement.Text = "^&"; // 保留原字符，仅替换格式
+
+                // 设置替换格式
+                Font replFont = find.Replacement.Font;
+                try { replFont.Name = fontName; } catch { }
+                try { replFont.NameFarEast = fontName; } catch { }
+                try { replFont.NameAscii = fontName; } catch { }
+                try { replFont.NameOther = fontName; } catch { }
+                try { replFont.NameBi = fontName; } catch { }
+                try { replFont.Size = fontSize; } catch { }
+
+                find.MatchWildcards = true;
+                find.Forward = true;
+                find.Wrap = WdFindWrap.wdFindStop;
+
+                object replaceAll = WdReplace.wdReplaceAll;
+                // 执行替换（在指定范围内）
+                find.Execute(Replace: ref replaceAll);
+            }
+            finally
+            {
+                // 尝试恢复原有设置，容错处理
+                try { if (origMatchWildcards != null) find.MatchWildcards = (bool)origMatchWildcards; } catch { }
+                try { if (origWrap != null) find.Wrap = (WdFindWrap)origWrap; } catch { }
+                try { if (origText != null) find.Text = (string)origText; } catch { }
             }
         }
 
@@ -136,22 +214,40 @@ namespace 李艇的办公助手
                 sf = sel.Font;
                 spf = sel.ParagraphFormat;
 
-                // 设置 Selection 的字体与段落属性，使插入点处的后续输入采用相同格式
-                sf.Name = fontName;
-                sf.Size = fontSize;
+                // 设置 Selection 的所有字体槽与大小
+                try { sf.Name = fontName; } catch { }
+                try { sf.NameFarEast = fontName; } catch { }
+                try { sf.NameAscii = fontName; } catch { }
+                try { sf.NameOther = fontName; } catch { }
+                try { sf.NameBi = fontName; } catch { }
+                try { sf.Size = fontSize; } catch { }
 
                 spf.LineSpacingRule = WdLineSpacing.wdLineSpaceExactly;
                 spf.LineSpacing = lineSpacing;
-                // 保持 Range 版本的一致默认（两端对齐）；调用方可再覆盖 Alignment
                 spf.Alignment = WdParagraphAlignment.wdAlignParagraphJustify;
                 spf.SpaceBefore = 0;
                 spf.SpaceAfter = 0;
+
+                // 确保无左/右缩进，特殊缩进（首行/悬挂）为“无”
+                try { spf.CharacterUnitFirstLineIndent = 0f; } catch { }
+                try { spf.FirstLineIndent = 0f; } catch { }
+                try { spf.LeftIndent = 0f; } catch { }
+                try { spf.RightIndent = 0f; } catch { }
+                try { spf.CharacterUnitLeftIndent = 0f; } catch { }
+                try { spf.CharacterUnitRightIndent = 0f; } catch { }
             }
             finally
             {
                 if (spf != null) Marshal.ReleaseComObject(spf);
                 if (sf != null) Marshal.ReleaseComObject(sf);
             }
+
+            // 同样对 Selection 所在范围逐字符修复 ASCII 标点/引号（若需要）
+            try
+            {
+                ForceAsciiPunctuationFont(sel.Range, fontName, fontSize);
+            }
+            catch { }
         }
 
         // ==================== 编号辅助方法 ====================
@@ -202,6 +298,8 @@ namespace 李艇的办公助手
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
             // 使用 Selection 版本，使光标处也能继承样式
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正小标宋_GBK", 22f, 29f);
 
             // 特殊对齐
@@ -223,6 +321,8 @@ namespace 李艇的办公助手
         private void button2_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             SyncSelectionToRange(sel);
         }
@@ -231,6 +331,8 @@ namespace 李艇的办公助手
         private void button3_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 1);
@@ -239,6 +341,8 @@ namespace 李艇的办公助手
         private void button5_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 2);
@@ -247,6 +351,8 @@ namespace 李艇的办公助手
         private void button6_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 3);
@@ -255,6 +361,8 @@ namespace 李艇的办公助手
         private void button7_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 4);
@@ -263,6 +371,8 @@ namespace 李艇的办公助手
         private void button14_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 5);
@@ -271,6 +381,8 @@ namespace 李艇的办公助手
         private void button15_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 6);
@@ -279,6 +391,8 @@ namespace 李艇的办公助手
         private void button16_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 7);
@@ -287,6 +401,8 @@ namespace 李艇的办公助手
         private void button17_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 8);
@@ -295,6 +411,8 @@ namespace 李艇的办公助手
         private void button18_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 9);
@@ -303,6 +421,8 @@ namespace 李艇的办公助手
         private void button19_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正黑体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel1;
             ApplyNumbering(sel.Range, "%1、", 10);
@@ -313,6 +433,8 @@ namespace 李艇的办公助手
         private void button8_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 1);
@@ -321,6 +443,8 @@ namespace 李艇的办公助手
         private void button20_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 2);
@@ -329,6 +453,8 @@ namespace 李艇的办公助手
         private void button21_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 3);
@@ -337,6 +463,8 @@ namespace 李艇的办公助手
         private void button22_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 4);
@@ -345,6 +473,8 @@ namespace 李艇的办公助手
         private void button23_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 5);
@@ -353,6 +483,8 @@ namespace 李艇的办公助手
         private void button24_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 6);
@@ -361,6 +493,8 @@ namespace 李艇的办公助手
         private void button25_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 7);
@@ -369,6 +503,8 @@ namespace 李艇的办公助手
         private void button26_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楱体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 8);
@@ -377,6 +513,8 @@ namespace 李艇的办公助手
         private void button27_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 9);
@@ -385,6 +523,8 @@ namespace 李艇的办公助手
         private void button28_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正楷体_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel2;
             ApplyNumbering(sel.Range, "（%1）", 10);
@@ -395,6 +535,8 @@ namespace 李艇的办公助手
         private void button4_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 1, WdListNumberStyle.wdListNumberStyleArabic);
@@ -403,6 +545,8 @@ namespace 李艇的办公助手
         private void button29_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 2, WdListNumberStyle.wdListNumberStyleArabic);
@@ -411,6 +555,8 @@ namespace 李艇的办公助手
         private void button30_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 3, WdListNumberStyle.wdListNumberStyleArabic);
@@ -419,6 +565,8 @@ namespace 李艇的办公助手
         private void button31_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 4, WdListNumberStyle.wdListNumberStyleArabic);
@@ -427,6 +575,8 @@ namespace 李艇的办公助手
         private void button32_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 5, WdListNumberStyle.wdListNumberStyleArabic);
@@ -435,6 +585,8 @@ namespace 李艇的办公助手
         private void button33_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 6, WdListNumberStyle.wdListNumberStyleArabic);
@@ -443,6 +595,8 @@ namespace 李艇的办公助手
         private void button34_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 7, WdListNumberStyle.wdListNumberStyleArabic);
@@ -451,6 +605,8 @@ namespace 李艇的办公助手
         private void button35_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 8, WdListNumberStyle.wdListNumberStyleArabic);
@@ -459,6 +615,8 @@ namespace 李艇的办公助手
         private void button36_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 9, WdListNumberStyle.wdListNumberStyleArabic);
@@ -467,6 +625,8 @@ namespace 李艇的办公助手
         private void button37_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel3;
             ApplyNumbering(sel.Range, "%1．", 10, WdListNumberStyle.wdListNumberStyleArabic);
@@ -477,6 +637,8 @@ namespace 李艇的办公助手
         private void button9_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 1, WdListNumberStyle.wdListNumberStyleArabic);
@@ -485,6 +647,8 @@ namespace 李艇的办公助手
         private void button38_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 2, WdListNumberStyle.wdListNumberStyleArabic);
@@ -493,6 +657,8 @@ namespace 李艇的办公助手
         private void button39_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 3, WdListNumberStyle.wdListNumberStyleArabic);
@@ -501,6 +667,8 @@ namespace 李艇的办公助手
         private void button40_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 4, WdListNumberStyle.wdListNumberStyleArabic);
@@ -509,6 +677,8 @@ namespace 李艇的办公助手
         private void button41_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 5, WdListNumberStyle.wdListNumberStyleArabic);
@@ -517,6 +687,8 @@ namespace 李艇的办公助手
         private void button42_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 6, WdListNumberStyle.wdListNumberStyleArabic);
@@ -525,6 +697,8 @@ namespace 李艇的办公助手
         private void button43_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 7, WdListNumberStyle.wdListNumberStyleArabic);
@@ -533,6 +707,8 @@ namespace 李艇的办公助手
         private void button44_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 8, WdListNumberStyle.wdListNumberStyleArabic);
@@ -541,6 +717,8 @@ namespace 李艇的办公助手
         private void button45_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 9, WdListNumberStyle.wdListNumberStyleArabic);
@@ -549,6 +727,8 @@ namespace 李艇的办公助手
         private void button46_Click(object sender, RibbonControlEventArgs e)
         {
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
             sel.Range.ParagraphFormat.OutlineLevel = WdOutlineLevel.wdOutlineLevel4;
             ApplyNumbering(sel.Range, "（%1）", 10, WdListNumberStyle.wdListNumberStyleArabic);
@@ -564,7 +744,8 @@ namespace 李艇的办公助手
                 Document doc = app.ActiveDocument;
                 Selection sel = app.Selection;
                 const float FallbackMinLineSpacing = 0.7f;
-
+                // 先清除所有格式（按新约定）
+                ClearFormatting(sel);
                 bool selHasTables = sel != null && sel.Tables != null && sel.Tables.Count >= 1;
                 bool selInTable = false;
                 try
@@ -587,6 +768,9 @@ namespace 李艇的办公助手
                             // 获取包含光标的表（若光标在单元格内）
                             tbl = sel.Range.Tables[1];
                             tr = tbl.Range;
+
+                            // 先设为“网格型”样式，再做具体格式设置
+                            tr.set_Style("网格型");
 
                             tr.Font.Reset();
                             tr.ParagraphFormat.Reset();
@@ -830,6 +1014,7 @@ namespace 李艇的办公助手
 
         private void button58_Click(object sender, Microsoft.Office.Tools.Ribbon.RibbonControlEventArgs e)
         {
+            
             WithScreenUpdatingDisabled(() =>
             {
                 Document doc = Globals.ThisAddIn.Application.ActiveDocument;
@@ -843,6 +1028,10 @@ namespace 李艇的办公助手
                     {
                         tbl = doc.Tables[i];
                         tr = tbl.Range;
+
+                        // 先设为“网格型”样式，再做具体格式设置
+                        tr.set_Style("网格型");
+
                         tr.Font.Reset();
                         tr.ParagraphFormat.Reset();
 
@@ -862,7 +1051,8 @@ namespace 李艇的办公助手
                         tr.ParagraphFormat.LineSpacingRule = WdLineSpacing.wdLineSpaceAtLeast;
                         try
                         {
-                            tr.ParagraphFormat.LineSpacing = 0f;
+                            tr.ParagraphFormat.LineSpacing = 0f; // 尝试“最小值”
+                            tr.ParagraphFormat.LineSpacing = FallbackMinLineSpacing; // 合法回落
                         }
                         catch (System.Runtime.InteropServices.COMException)
                         {
@@ -1124,6 +1314,8 @@ namespace 李艇的办公助手
         {
             // 小标题：方正楷体 三号 居中 正文文本 缩进左右均为0 缩进特殊无 间距段前后均为0 行距29磅
             Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
             const string fontName = "方正楷体_GBK";
             const float fontSize = 16f; // 三号
             const float lineSpacing = 29f;
@@ -1181,6 +1373,17 @@ namespace 李艇的办公助手
                     hdrRange.Font.Name = fontName;
                     hdrRange.Font.Size = fontSize;
                     hdrRange.Font.Bold = 1;
+
+                    // 首行底纹：前景白色，背景1 深色15%（近似为 RGB(217,217,217)），无纹理
+                    try
+                    {
+                        hdrRange.Shading.ForegroundPatternColor = WdColor.wdColorWhite;
+                        int bgOle = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.FromArgb(217, 217, 217));
+                        hdrRange.Shading.BackgroundPatternColor = (WdColor)bgOle;
+                        hdrRange.Shading.Texture = Microsoft.Office.Interop.Word.WdTextureIndex.wdTextureNone;
+                    }
+                    catch { /* 忽略无法设置底纹的环境差异 */ }
+
                     try { hdrRow.HeadingFormat = -1; }
                     catch (ArgumentException) { ApplyHeaderByCells(tbl, fontName, fontSize); }
                 }
@@ -1221,6 +1424,16 @@ namespace 李艇的办公助手
                             cellFont = cellRange.Font;
                             cellFont.Name = fontName;
                             cellFont.Size = fontSize;
+
+                            // 单元格底纹设置（与 SafeApplyFirstLogicalRowHeader 保持一致）
+                            try
+                            {
+                                cellRange.Shading.ForegroundPatternColor = WdColor.wdColorWhite;
+                                int bgOle = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.FromArgb(217, 217, 217));
+                                cellRange.Shading.BackgroundPatternColor = (WdColor)bgOle;
+                                cellRange.Shading.Texture = Microsoft.Office.Interop.Word.WdTextureIndex.wdTextureNone;
+                            }
+                            catch { }
                         }
                     }
                     finally
@@ -1261,6 +1474,16 @@ namespace 李艇的办公助手
                         f.Name = fontName;
                         f.Size = fontSize;
                         f.Bold = 1;
+
+                        // 设置首行单元格底纹
+                        try
+                        {
+                            r.Shading.ForegroundPatternColor = WdColor.wdColorWhite;
+                            int bgOle = System.Drawing.ColorTranslator.ToOle(System.Drawing.Color.FromArgb(217, 217, 217));
+                            r.Shading.BackgroundPatternColor = (WdColor)bgOle;
+                            r.Shading.Texture = Microsoft.Office.Interop.Word.WdTextureIndex.wdTextureNone;
+                        }
+                        catch { }
                     }
                     finally
                     {
@@ -1300,6 +1523,61 @@ namespace 李艇的办公助手
                     if (sel != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(sel);
                 }
             });
+        }
+
+        // 工具：清除 Range/Selection/Table 的常见格式（统一入口）
+        private void ClearFormatting(Range range)
+        {
+            if (range == null) return;
+            try { range.Font.Reset(); } catch { }
+            try { range.ParagraphFormat.Reset(); } catch { }
+            try { range.HighlightColorIndex = WdColorIndex.wdNoHighlight; } catch { }
+        }
+
+        private void ClearFormatting(Selection sel)
+        {
+            if (sel == null) return;
+            ClearFormatting(sel.Range);
+        }
+
+        private void ClearFormatting(Table tbl)
+        {
+            if (tbl == null) return;
+            ClearFormatting(tbl.Range);
+        }
+
+        /// <summary>
+        /// 强制将 Range 中的 ASCII 标点和引号字符的字体和字号设置为指定值
+        /// </summary>
+        private void ForceAsciiPunctuationFont(Range range, string fontName, float fontSize)
+        {
+            if (range == null) return;
+
+            // 只处理文本内容
+            string text = range.Text;
+            if (string.IsNullOrEmpty(text)) return;
+
+            // ASCII 标点和引号的 Unicode 范围
+            char[] asciiPunctuations = { '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~' };
+
+            for (int i = 1; i <= text.Length; i++)
+            {
+                char c = text[i - 1];
+                if (c <= 0x7F && (char.IsPunctuation(c) || c == '"' || c == '\'' || Array.IndexOf(asciiPunctuations, c) >= 0))
+                {
+                    Range charRange = range.Duplicate;
+                    charRange.SetRange(range.Start + i - 1, range.Start + i);
+                    try
+                    {
+                        charRange.Font.Name = fontName;
+                        charRange.Font.Size = fontSize;
+                    }
+                    finally
+                    {
+                        Marshal.ReleaseComObject(charRange);
+                    }
+                }
+            }
         }
     }
 }
