@@ -1139,6 +1139,7 @@ namespace 李艇的办公助手
         }
 
         // ==================== 页面设置（仅页面项 + 仅修改“正文”样式） ====================
+        // 更新页面设置按钮方法（按你的要求：上35mm、下32mm、左28mm、右26mm）
         private void button12_Click(object sender, Microsoft.Office.Tools.Ribbon.RibbonControlEventArgs e)
         {
             Application app = Globals.ThisAddIn.Application;
@@ -1150,13 +1151,27 @@ namespace 李艇的办公助手
 
                 doc.PageSetup.PaperSize = WdPaperSize.wdPaperA4;
                 doc.PageSetup.Orientation = WdOrientation.wdOrientPortrait;
-                doc.PageSetup.TopMargin = ConvertMillimetersToPoints(37);
-                doc.PageSetup.BottomMargin = ConvertMillimetersToPoints(35);
+                doc.PageSetup.TopMargin = ConvertMillimetersToPoints(35);
+                doc.PageSetup.BottomMargin = ConvertMillimetersToPoints(32);
                 doc.PageSetup.LeftMargin = ConvertMillimetersToPoints(28);
                 doc.PageSetup.RightMargin = ConvertMillimetersToPoints(26);
-                doc.PageSetup.FooterDistance = ConvertMillimetersToPoints(24.7);
+
+                // 设置页眉/页脚距（1.5cm 和 2.5cm）
+                doc.PageSetup.HeaderDistance = ConvertMillimetersToPoints(15); // 1.5 cm
+                doc.PageSetup.FooterDistance = ConvertMillimetersToPoints(25); // 2.5 cm
+
                 doc.PageSetup.LayoutMode = (WdLayoutMode)1; // wdLayoutModeGrid
                 doc.PageSetup.LinesPage = 22;
+
+                // 不同 Interop 版本中每行字符属性名可能不同，使用 dynamic 以提高兼容性
+                try
+                {
+                    ((dynamic)doc.PageSetup).CharsPerLine = 28;
+                }
+                catch
+                {
+                    try { ((dynamic)doc.PageSetup).CharactersPerLine = 28; } catch { }
+                }
 
                 Style normalStyle = null;
                 try
@@ -1578,6 +1593,219 @@ namespace 李艇的办公助手
                     }
                 }
             }
+        }
+
+
+        private void button61_Click(object sender, RibbonControlEventArgs e)
+        {
+           
+            Application app = Globals.ThisAddIn.Application;
+            Document doc = app.ActiveDocument;
+            bool originalScreenUpdating = app.ScreenUpdating;
+            try
+            {
+                app.ScreenUpdating = false;
+
+                object collapseStart = WdCollapseDirection.wdCollapseStart;
+                object collapseEnd = WdCollapseDirection.wdCollapseEnd;
+
+                // 遍历所有节，设置底端居中页码，显示格式为 －N－，字号四号（14pt），字体 方正宋体_GBK
+                for (int i = 1; i <= doc.Sections.Count; i++)
+                {
+                    Section sec = null;
+                    HeaderFooter primaryFooter = null;
+                    HeaderFooter evenFooter = null;
+                    Range r = null;
+                    try
+                    {
+                        sec = doc.Sections[i];
+
+                        primaryFooter = sec.Footers[WdHeaderFooterIndex.wdHeaderFooterPrimary];
+                        evenFooter = sec.Footers[WdHeaderFooterIndex.wdHeaderFooterEvenPages];
+
+                        // 主（默认）页脚 - 居中
+                        r = primaryFooter.Range;
+                        r.Text = "";
+                        r.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                        r.Collapse(ref collapseStart);
+                        r.InsertBefore(" —");
+                        r.Collapse(ref collapseStart);
+                        r.Fields.Add(r, WdFieldType.wdFieldPage);
+                        r.Collapse(ref collapseEnd);
+                        r.InsertAfter("— ");
+                        try { primaryFooter.Range.Font.Name = "方正宋体_GBK"; } catch { }
+                        try { primaryFooter.Range.Font.Size = 14f; } catch { }
+                        Marshal.ReleaseComObject(r);
+
+                        // 偶页页脚 - 同样居中
+                        r = evenFooter.Range;
+                        r.Text = "";
+                        r.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                        r.Collapse(ref collapseStart);
+                        r.InsertBefore(" —");
+                        r.Collapse(ref collapseStart);
+                        r.Fields.Add(r, WdFieldType.wdFieldPage);
+                        r.Collapse(ref collapseEnd);
+                        r.InsertAfter("— ");
+                        try { evenFooter.Range.Font.Name = "方正宋体_GBK"; } catch { }
+                        try { evenFooter.Range.Font.Size = 14f; } catch { }
+                    }
+                    finally
+                    {
+                        try { if (r != null) Marshal.ReleaseComObject(r); } catch { }
+                        try { if (primaryFooter != null) Marshal.ReleaseComObject(primaryFooter); } catch { }
+                        try { if (evenFooter != null) Marshal.ReleaseComObject(evenFooter); } catch { }
+                        try { if (sec != null) Marshal.ReleaseComObject(sec); } catch { }
+                    }
+                }
+            }
+            finally
+            {
+                app.ScreenUpdating = originalScreenUpdating;
+            }
+        
+        }
+
+        private void button62_Click(object sender, RibbonControlEventArgs e)
+        {
+            Application app = Globals.ThisAddIn.Application;
+            Document doc = app.ActiveDocument;
+            bool originalScreenUpdating = app.ScreenUpdating;
+            try
+            {
+                app.ScreenUpdating = false;
+
+                // 使用单双页不同页眉/页脚
+                try { doc.PageSetup.OddAndEvenPagesHeaderFooter = -1; } catch { }
+
+                // 遍历所有节，分别设置奇偶页脚（外侧对齐）并插入格式为 －N－ 的页码
+                object collapseStart = WdCollapseDirection.wdCollapseStart;
+                object collapseEnd = WdCollapseDirection.wdCollapseEnd;
+                for (int i = 1; i <= doc.Sections.Count; i++)
+                {
+                    Section sec = null;
+                    HeaderFooter oddFooter = null;
+                    HeaderFooter evenFooter = null;
+                    Range r = null;
+                    try
+                    {
+                        sec = doc.Sections[i];
+                        oddFooter = sec.Footers[WdHeaderFooterIndex.wdHeaderFooterPrimary];     // 主（奇）页脚
+                        evenFooter = sec.Footers[WdHeaderFooterIndex.wdHeaderFooterEvenPages]; // 偶页页脚
+
+                        // 清空并构造奇页：右对齐，格式为 －PAGE－ + 右侧空一字（全角空格）
+                        r = oddFooter.Range;
+                        r.Text = "";
+                        r.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphRight;
+                        r.Collapse(ref collapseStart);
+                        r.InsertBefore(" —");
+                        r.Collapse(ref collapseStart);
+                        r.Fields.Add(r, WdFieldType.wdFieldPage);
+                        r.Collapse(ref collapseEnd);
+                        r.InsertAfter("— "); // 末尾加一个全角空格作为“右空一字”
+                                             // 字体和字号
+                                             // 段落配置：右侧缩进1字符，段后8磅，行距单倍行距
+                        ParagraphFormat pfOdd = null;
+                        try
+                        {
+                            pfOdd = r.ParagraphFormat;
+                            try { pfOdd.CharacterUnitRightIndent = 1f; } catch { }
+                            try { pfOdd.SpaceAfter = 8; } catch { }
+                            try { pfOdd.LineSpacingRule = WdLineSpacing.wdLineSpaceSingle; } catch { }
+                        }
+                        finally
+                        {
+                            if (pfOdd != null) Marshal.ReleaseComObject(pfOdd);
+                        }
+                        try { oddFooter.Range.Font.Name = "方正宋体_GBK"; } catch { }
+                        try { oddFooter.Range.Font.Size = 14f; } catch { }
+
+                        Marshal.ReleaseComObject(r);
+
+                        // 偶页：左对齐，格式为 左侧空一字 + －PAGE－
+                        r = evenFooter.Range;
+                        r.Text = "";
+                        r.ParagraphFormat.Alignment = WdParagraphAlignment.wdAlignParagraphLeft;
+                        r.Collapse(ref collapseStart);
+                        r.InsertAfter(" —"); // 前置全角空格作为“左空一字”
+                        r.Collapse(ref collapseStart);
+                        r.Fields.Add(r, WdFieldType.wdFieldPage);
+                        r.Collapse(ref collapseEnd);
+                        r.InsertAfter("— ");
+                        // 同样应用段落配置（如需仅对奇页生效可移除）
+                        ParagraphFormat pfEven = null;
+                        try
+                        {
+                            pfEven = r.ParagraphFormat;
+                            try { pfEven.CharacterUnitFirstLineIndent = 1f; } catch { }
+                            try { pfEven.SpaceAfter = 8; } catch { }
+                            try { pfEven.LineSpacingRule = WdLineSpacing.wdLineSpaceSingle; } catch { }
+                        }
+                        finally
+                        {
+                            if (pfEven != null) Marshal.ReleaseComObject(pfEven);
+                        }
+                        try { evenFooter.Range.Font.Name = "方正宋体_GBK"; } catch { }
+                        try { evenFooter.Range.Font.Size = 14f; } catch { }
+
+                        // 释放本次使用的 Range
+                    }
+                    finally
+                    {
+                        try { if (r != null) Marshal.ReleaseComObject(r); } catch { }
+                        try { if (oddFooter != null) Marshal.ReleaseComObject(oddFooter); } catch { }
+                        try { if (evenFooter != null) Marshal.ReleaseComObject(evenFooter); } catch { }
+                        try { if (sec != null) Marshal.ReleaseComObject(sec); } catch { }
+                    }
+                }
+            }
+            finally
+            {
+                app.ScreenUpdating = originalScreenUpdating;
+            }
+        }
+
+        private void button63_Click(object sender, RibbonControlEventArgs e)
+        {
+            Application app = Globals.ThisAddIn.Application;
+            Selection sel = app.Selection;
+            if (sel == null) return;
+
+            WithScreenUpdatingDisabled(() =>
+            {
+                Font f = null;
+                ParagraphFormat pf = null;
+                try
+                {
+                    // 字体设置：方正楷体 GBK，三号 = 16pt，加粗
+                    string fontName = "方正楷体_GBK";
+                    float fontSize = 16f;
+
+                    // 重置并批量设置字体/段落属性（减少 COM 往返）
+                    try { sel.Font.Reset(); } catch { }
+
+
+                    f = sel.Font;
+                    pf = sel.ParagraphFormat;
+
+                    try { f.Name = fontName; } catch { }
+                    try { f.NameFarEast = fontName; } catch { }
+                    try { f.NameAscii = fontName; } catch { }
+                    try { f.NameOther = fontName; } catch { }
+                    try { f.NameBi = fontName; } catch { }
+
+                    try { f.Size = fontSize; } catch { }
+                    // Word Interop 中 Bold 使用 -1 表示 true（VARIANT_TRUE）
+                    try { f.Bold = -1; } catch { }
+
+                }
+                finally
+                {
+                    if (pf != null) Marshal.ReleaseComObject(pf);
+                    if (f != null) Marshal.ReleaseComObject(f);
+                }
+
+            });
         }
     }
 }
