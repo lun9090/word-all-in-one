@@ -1807,5 +1807,27 @@ namespace 李艇的办公助手
 
             });
         }
+
+        private void button64_Click(object sender, RibbonControlEventArgs e)
+        {
+            Selection sel = Globals.ThisAddIn.Application.Selection;
+            // 先清除所有格式（按新约定）
+            ClearFormatting(sel);
+            ApplyBasicParagraphStyle(sel, "方正仿宋_GBK", 16f, 29f);
+
+            // 增加居中格式
+            ParagraphFormat pf = null;
+            try
+            {
+                pf = sel.ParagraphFormat;
+                pf.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+            }
+            finally
+            {
+                if (pf != null) Marshal.ReleaseComObject(pf);
+            }
+
+            SyncSelectionToRange(sel);
+        }
     }
 }
